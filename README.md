@@ -94,12 +94,11 @@ MYNOVA RFC features a powerful, self-developed GUI engine optimized for embedded
 ![screen2_en](Images/screen2_en.jpg)
 
 ## Web Control UI
-<img src="Images/web1.png" width="30%"/>
-<img src="Images/web2.png" width="30%"/>
-<img src="Images/web3.png" width="30%"/>
-<img src="Images/web4.png" width="30%"/>
-<img src="Images/web5.png" width="30%"/>
-<img src="Images/web5.png" width="30%"/>
+<img src="Images/webUI1.png" width="30%"/>
+<img src="Images/webUI2.png" width="30%"/>
+<img src="Images/webUI3.png" width="30%"/>
+<img src="Images/webUI4.png" width="30%"/>
+<img src="Images/webUI5.png" width="30%"/>
 
 ## Home Assistant
 <img src="Images/HomeAssistant.png" width="30%"/>
