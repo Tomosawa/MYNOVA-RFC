@@ -1,0 +1,181 @@
+/* 
+* Copyright (c) 2026 Tomosawa 
+* https://github.com/Tomosawa/ 
+* All rights reserved 
+*/
+
+// SoundPage.cpp
+#include "SoundPage.h"
+#include "../GUI/UIEngine.h"
+#include "../SystemSetting.h"
+#include "../Buzzer.h"
+
+extern UIEngine uiEngine;
+extern SystemSetting systemSetting;
+extern Buzzer buzzer;
+
+// 喇叭图标 - 开启状态 (32x32像素)
+static const unsigned char speaker_on_bits[] = {
+    0x00,0x00,0x00,0x00,0x00,0xC0,0x01,0x00,0x00,0xE0,0x03,0x00,0x00,0xF0,0x03,0x00,
+    0x00,0xF8,0x03,0x02,0x00,0xFC,0x03,0x07,0x00,0xFE,0x03,0x0F,0x00,0xFF,0x03,0x1E,
+    0xF8,0xFF,0x03,0x1C,0xFE,0xFF,0x73,0x3C,0xFE,0xFF,0x73,0x38,0xFE,0xFF,0xF3,0x78,
+    0xFE,0xFF,0xE3,0x79,0xFE,0xFF,0xE3,0x71,0xFE,0xFF,0xC3,0x71,0xFE,0xFF,0xC3,0x71,
+    0xFE,0xFF,0xC3,0x71,0xFE,0xFF,0xC3,0x71,0xFE,0xFF,0xC3,0x71,0xFE,0xFF,0xC3,0x79,
+    0xFE,0xFF,0xE3,0x79,0xFE,0xFF,0xE3,0x79,0xF8,0xFF,0xF3,0x78,0x00,0xFF,0x73,0x38,
+    0x00,0xFE,0x73,0x3C,0x00,0xFC,0x03,0x1C,0x00,0xF8,0x03,0x1E,0x00,0xF0,0x03,0x0F,
+    0x00,0xE0,0x03,0x07,0x00,0xC0,0x01,0x02,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+ };
+ 
+// 喇叭图标 - 禁用状态 (32x32像素，带斜线)
+static const unsigned char speaker_off_bits[] = {
+    0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xC0,0x01,0x00,0x38,0xE0,0x03,0x00,
+    0x78,0xF0,0x03,0x02,0xF8,0xF8,0x03,0x07,0xF0,0xFD,0x03,0x0F,0xE0,0xFB,0x03,0x1E,
+    0xC0,0xF7,0x03,0x1C,0xBC,0xEF,0x73,0x3C,0x7E,0xDF,0x73,0x38,0xFE,0xBE,0xF3,0x78,
+    0xFE,0x7D,0xE3,0x79,0xFE,0xFB,0xE2,0x71,0xFE,0xF7,0xC1,0x71,0xFE,0xEF,0xC3,0x71,
+    0xFE,0xDF,0xC7,0x71,0xFE,0xBF,0xCF,0x71,0xFE,0x7F,0xDF,0x71,0xFE,0xFF,0xBE,0x79,
+    0xFE,0xFF,0x7D,0x38,0xFE,0xFF,0xFB,0x38,0xF8,0xFF,0xF3,0x1D,0x00,0xFF,0xE3,0x1B,
+    0x00,0xFE,0xC3,0x07,0x00,0xFC,0x83,0x0F,0x00,0xF8,0x03,0x1F,0x00,0xF0,0x03,0x1E,
+    0x00,0xE0,0x03,0x1C,0x00,0xC0,0x01,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+};
+
+SoundPage::SoundPage() : UIPage(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT) {
+    // 从SystemSetting读取当前声音设置
+    soundEnabled = systemSetting.getBuzzerEnable();
+    originalState = soundEnabled; // 保存原始状态
+    
+    initLayout();
+}
+
+void SoundPage::initLayout() {
+    // 标题
+    titleLabel = new UILabel();
+    titleLabel->x = 0;
+    titleLabel->y = 0;
+    titleLabel->width = SCREEN_WIDTH;
+    titleLabel->height = 12;
+    titleLabel->label = "声音提示";
+    titleLabel->textAlign = CENTER;
+    titleLabel->verticalAlign = MIDDLE;
+    addWidget(titleLabel);
+    
+    // 喇叭图标（居中显示）
+    soundIcon = new UIIcon();
+    soundIcon->x = 0;
+    soundIcon->y = 15;
+    soundIcon->width = SCREEN_WIDTH;
+    soundIcon->height = 32;
+    soundIcon->bCentered = true;
+    addWidget(soundIcon);
+    
+    // 状态文字
+    statusLabel = new UILabel();
+    statusLabel->x = 0;
+    statusLabel->y = 47;
+    statusLabel->width = SCREEN_WIDTH;
+    statusLabel->height = 10;
+    statusLabel->textAlign = CENTER;
+    statusLabel->verticalAlign = MIDDLE;
+    addWidget(statusLabel);
+    
+    // 更新图标和状态文字
+    updateIcon();
+    
+    // 导航栏
+    navBar = new UINavBar(0, SCREEN_HEIGHT - 12, SCREEN_WIDTH, 12);
+    navBar->setLeftButtonText("返回");
+    navBar->setRightButtonText("保存");
+    addWidget(navBar);
+}
+
+void SoundPage::updateIcon() {
+    // 根据当前状态设置图标
+    if (soundEnabled) {
+        soundIcon->setIcon(speaker_on_bits, 32, 32);
+        statusLabel->label = "已开启";
+    } else {
+        soundIcon->setIcon(speaker_off_bits, 32, 32);
+        statusLabel->label = "已关闭";
+    }
+}
+
+void SoundPage::toggleSound() {
+    // 切换声音开关状态
+    soundEnabled = !soundEnabled;
+    
+    // 实时设置声音（不保存）
+    systemSetting.setBuzzerEnable(soundEnabled, false);
+    
+    if(soundEnabled) {
+        buzzer.beep(200);
+    } 
+    // 更新显示
+    updateIcon();
+}
+
+void SoundPage::saveSettings() {
+    // 保存设置到存储
+    systemSetting.setBuzzerEnable(soundEnabled, true);
+}
+
+void SoundPage::onButtonBack(void* context) {
+    // 返回键：恢复原始状态，不保存
+    navBar->showLeftBlink(1, 80, 80, [this]() {
+        // 恢复原始状态
+        soundEnabled = originalState;
+        systemSetting.setBuzzerEnable(soundEnabled, false);
+        uiEngine.navigateBack();
+    });
+}
+
+void SoundPage::onButtonEnter(void* context) {
+    // 确定键：保存设置并返回
+    navBar->showRightBlink(1, 80, 80, [this]() {
+        saveSettings();
+        uiEngine.navigateBack();
+    });
+}
+
+void SoundPage::onButton1(void* context) {
+    // 按键1：切换声音开关
+    toggleSound();
+}
+
+void SoundPage::onButton2(void* context) {
+    // 按键2：切换声音开关
+    toggleSound();
+}
+
+void SoundPage::onButton3(void* context) {
+    // 按键3：切换声音开关
+    toggleSound();
+}
+
+void SoundPage::onButton4(void* context) {
+    // 按键4：切换声音开关
+    toggleSound();
+}
+
+void SoundPage::onButton6(void* context) {
+    // 按键6：切换声音开关
+    toggleSound();
+}
+
+void SoundPage::onButton5(void* context) {
+    // 按键5：切换声音开关
+    toggleSound();
+}
+
+void SoundPage::onButton7(void* context) {
+    // 按键7：切换声音开关
+    toggleSound();
+}
+
+void SoundPage::onButton8(void* context) {
+    // 按键8：切换声音开关（与按键2相同）
+    toggleSound();
+}
+
+void SoundPage::onButton9(void* context) {
+    // 按键9：切换声音开关
+    toggleSound();
+}
