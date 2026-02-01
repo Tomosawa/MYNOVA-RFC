@@ -13,7 +13,8 @@
 extern UIEngine uiEngine;
 extern WiFiManager wifiManager; // 假设有全局实例
 
-#define UPDATE_JSON_URL "https://kyoutei.cn:1121/rfc/update.json"
+// 替换为你的域名 Please replace with your domain
+#define UPDATE_JSON_URL "https://mydomain.com/rfc/update.json" 
 
 // 版本比较辅助函数
 // 返回 1: v1 > v2
